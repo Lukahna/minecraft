@@ -1,0 +1,42 @@
+#!/usr/bin/env perl
+#
+# Check TPS of server. Inelegant.
+
+use 5.018;
+use File::Slurp qw/:all/;
+no warnings 'uninitialized';
+use autodie;
+
+my $SERVER = 'craftfellas'; # TODO - Config
+sub msm($);
+
+if ($ARGV[0] ne '--last') {
+    msm "debug start";
+    sleep 10;
+    msm "debug stop";
+    sleep 1; # We need to give MC time to write the log
+}
+
+chdir "/opt/msm/servers/$SERVER/debug";
+
+# TODO - This is fine, but I'd prefer to use read_dir()
+my $debug = `/bin/ls -1rt | /usr/bin/tail -1`;
+chomp $debug;
+#say "Debug log is $debug";
+
+my $text = read_file($debug);
+$text =~ m!// This is approximately (\S+) ticks per second!;
+my $tps = $1;
+
+say $tps;
+
+# TODO - Config
+#unlink $debug if $ARGV[0] ne '--last';
+
+# TODO - Use rcon
+# INSECURE -- Because I trust myself and I'm only using this for static
+# commands.
+sub msm($) {
+    my $r = `/usr/local/bin/msm $SERVER cmd $_[0]`;
+    return $r;
+}
